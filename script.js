@@ -1,48 +1,46 @@
 // ================= 1. CONFIG (ตั้งค่าระบบ) =================
 const CONFIG = {
-    // Supabase
+    // Supabase (ใส่ค่าเดิมของคุณ)
     supaUrl: 'https://pufddwdcpugilwlavban.supabase.co', 
     supaKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB1ZmRkd2RjcHVnaWx3bGF2YmFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzODY1MDUsImV4cCI6MjA3NDk2MjUwNX0.6dyYteDu6QSkTL9hIiaHw_2WeltSGSIoMSvx3OcEjN0', 
     
-    // EmailJS
+    // EmailJS (ใส่ค่าเดิมของคุณ)
     emailPublicKey: 'rEly1Il6Xz0qZwaSc',   
     emailServiceId: 'service_tolm3pu',   
+    
+    // ⚠️ อย่าลืมแก้ตรงนี้เป็น ID จริงจากเว็บ EmailJS (เช่น template_u9d2x0s)
     emailTemplateId_Master: 'template_master', 
 
     // ------------------------------------------------------------------
-    // [1] อีเมลหัวหน้าแผนก (ต้องใส่ให้ครบทุกแผนก ไม่งั้นส่งไม่ออก)
+    // [1] อีเมลหัวหน้าแผนก (Step 1: ผู้ตรวจสอบ)
     // ------------------------------------------------------------------
     departmentHeads: {
-        'จัดซื้อ': 'suparat@company.com',      
-        'บัญชี': 'account_head@company.com',  
-        
-        // [แก้ไขแล้ว] ตรงกับ HTML
-        'ฝ่ายผลิต': 'prod_head@company.com',   
-        
-        'คลังสินค้า': 'warehouse@company.com', 
-        'ขาย/การตลาด': 'sales@company.com'     
+        'จัดซื้อ': 'jakkidmarat@gmail.com',      // คุณจักรกฤษณ์ (หัวหน้าจัดซื้อ)
+        'บัญชี': 'account@example.com',          // (ตัวอย่าง) หัวหน้าบัญชี
+        'ฝ่ายผลิต': 'production@example.com',    // (ตัวอย่าง) หัวหน้าฝ่ายผลิต
+        'คลังสินค้า': 'warehouse@example.com',   // (ตัวอย่าง) หัวหน้าคลัง
+        'ขาย/การตลาด': 'sales@example.com'       // (ตัวอย่าง) หัวหน้าขาย
     },
 
-    // [2] อีเมลผู้ช่วย กก. (คุณเบญจมาศ)
-    managerEmail: 'bestworld.bwp328@gmail.com', 
+    // [2] อีเมลผู้ช่วย กก. (Step 2: ผู้อนุมัติ)
+    managerEmail: 'bestworld.bwp328@gmail.com', // คุณเบญจมาศ
 
-    // [3] อีเมลฝ่ายจัดซื้อ
+    // [3] อีเมลฝ่ายจัดซื้อ (รับใบที่อนุมัติแล้ว)
     purchasingEmail: 'hr.bpp.2564@gmail.com',
 
     // -----------------------------------------------------------
     // ระบบรหัสผ่านแยกแผนก
     // -----------------------------------------------------------
     passwords: {
-        '1001': 'จัดซื้อ',        // คุณศุภรัตน์
-        '1002': 'บัญชี',          
+        // --- รหัสสำหรับหัวหน้าแผนก (Step 1) ---
+        '1001': 'จัดซื้อ',        // รหัสหัวหน้าจัดซื้อ
+        '1002': 'บัญชี',          // รหัสหัวหน้าบัญชี
+        '1003': 'ฝ่ายผลิต',       // รหัสหัวหน้าฝ่ายผลิต
+        '1004': 'คลังสินค้า',     // รหัสหัวหน้าคลัง
+        '1005': 'ขาย/การตลาด',    // รหัสหัวหน้าขาย
         
-        // [แก้ไขแล้ว] รหัส 1003 จะเห็นงานของ "ฝ่ายผลิต"
-        '1003': 'ฝ่ายผลิต',        
-        
-        '1004': 'คลังสินค้า',     
-        '1005': 'ขาย/การตลาด',    
-        
-        '9999': 'MANAGER_ROLE'    // คุณเบญจมาศ (เห็นหมดที่ส่งมาขั้น 2)
+        // --- รหัสสำหรับผู้ช่วย กก. (Step 2) ---
+        '9999': 'MANAGER_ROLE'    // รหัสคุณเบญจมาศ
     }
 };
 
@@ -54,9 +52,12 @@ let currentUserRole = sessionStorage.getItem('userRole') || '';
 let currentUserDept = sessionStorage.getItem('userDept') || ''; 
 
 document.addEventListener("DOMContentLoaded", function() {
+    // 1. โหลด Logo
     if (typeof LOGO_BASE64 !== 'undefined') {
         document.querySelectorAll('.app-logo').forEach(img => img.src = LOGO_BASE64);
     }
+
+    // 2. เช็ค Login
     if (window.location.href.includes('admin.html')) {
         const overlay = document.getElementById('loginOverlay');
         if (overlay) {
@@ -189,9 +190,10 @@ async function loadPRs() {
             if (!currentUserRole) { tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">กรุณาเข้าสู่ระบบใหม่</td></tr>'; return; }
             
             if (currentUserRole === 'head') {
-                // กรองตามแผนก
+                // หัวหน้า: เห็นเฉพาะงานแผนกตัวเอง
                 query = query.eq('status', 'pending_head').eq('department', currentUserDept);
             } else if (currentUserRole === 'manager') {
+                // ผช.กก.: เห็นงานรออนุมัติ
                 query = query.eq('status', 'pending_manager');
             }
         } else {
@@ -253,7 +255,8 @@ function renderItemsTable() {
     let htmlRows = '';
     if (currentPR.items) {
         currentPR.items.forEach((item, index) => {
-            if (currentUserRole === 'manager' && item.status === 'rejected') return; 
+            // Manager ซ่อนรายการที่ Head ปัดตก
+            if (currentUserRole === 'manager' && item.status === 'rejected') return;
 
             const isChecked = (item.status === 'approved' || item.status === 'pending');
             const reasonStyle = isChecked ? 'display:none;' : 'display:block;';
@@ -294,7 +297,7 @@ window.finalizeApproval = async function() {
             await db.from('purchase_requests').update({ status: nextStatus, items: currentPR.items }).eq('id', currentPR.id);
             await emailjs.send(CONFIG.emailServiceId, CONFIG.emailTemplateId_Master, { 
                 to_email: CONFIG.managerEmail, 
-                subject: `[Step 2] หัวหน้า${currentPR.department}ตรวจสอบแล้ว รออนุมัติ PR ${currentPR.pr_number}`, 
+                subject: `[Step 2] ผ่านการตรวจสอบแล้ว รออนุมัติ PR ${currentPR.pr_number}`, 
                 html_content: `<h3>เรียน ผู้ช่วยกรรมการผู้จัดการ (คุณเบญจมาศ),</h3><p>หัวหน้าแผนก (${currentPR.department}) ได้ตรวจสอบ PR เลขที่ <b>${currentPR.pr_number}</b> เรียบร้อยแล้ว</p><p>กรุณาพิจารณาอนุมัติขั้นตอนสุดท้าย: <a href="${adminLink}">คลิกที่นี่</a></p>` 
             });
             alert('✅ บันทึกผลแล้ว ส่งต่อให้คุณเบญจมาศเรียบร้อย!');
@@ -352,7 +355,7 @@ async function loadPRForPrint() {
         document.getElementById('v_required_date').innerText = new Date(pr.required_date).toLocaleDateString('th-TH');
 
         if (pr.status === 'pending_manager' || pr.status === 'processed') {
-            document.getElementById('v_sign_head').innerHTML = `( หัวหน้าแผนก${pr.department} )<br><span class="text-success small" style="font-size:10px;">อนุมัติออนไลน์</span>';
+            document.getElementById('v_sign_head').innerHTML = `( หัวหน้าแผนก${pr.department} )<br><span class="text-success small" style="font-size:10px;">อนุมัติออนไลน์</span>`;
         }
         if (pr.status === 'processed') {
             document.getElementById('v_sign_manager').innerHTML = '( เบญจมาศ ถิ่นจันทร์ )<br><span class="text-success small" style="font-size:10px;">อนุมัติออนไลน์</span>';
